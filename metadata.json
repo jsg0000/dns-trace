@@ -1,0 +1,5 @@
+{
+  "name": "DNS Route Visualizer",
+  "description": "An interactive, animated DNS resolution tracer that visualizes the journey of a DNS query from the browser to authoritative name servers, providing both high-school level concepts and Master's level technical details.",
+  "requestFramePermissions": []
+}
