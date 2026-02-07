@@ -1,0 +1,10 @@
+{
+  "name": "cyber-trace",
+  "assets": {
+    "directory": "./dist"
+  },
+  "compatibility_date": "2024-10-22",
+  "observability": {
+    "enabled": true
+  }
+}
