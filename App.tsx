@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Terminal, Activity, ArrowRight, BookOpen, Globe, Cpu, Layers, ShieldCheck, Zap, 
@@ -47,10 +48,12 @@ const App: React.FC = () => {
 
   // Auto-scroll Trace Steps
   useEffect(() => {
+    // We scroll the trace container to keep the active step in view
     if (activeStepIndex >= 0 && stepRefs.current[activeStepIndex]) {
       stepRefs.current[activeStepIndex]?.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
+        inline: 'nearest'
       });
     }
   }, [activeStepIndex]);
@@ -175,12 +178,6 @@ const App: React.FC = () => {
     }
   };
 
-  const getPacketTop = () => {
-    if (activeStepIndex === -1) return -40;
-    // Calculate position based on the active step's element if available, fallback to estimation
-    return (activeStepIndex * 100) + 40; 
-  };
-
   return (
     <div className="h-screen bg-[#050505] text-zinc-300 selection:bg-emerald-500/30 overflow-hidden flex flex-col">
       <div className="scanline"></div>
@@ -211,12 +208,12 @@ const App: React.FC = () => {
           
           {/* Left Panel: Route Visualization (Scrollable) */}
           <div className="lg:col-span-3 bg-zinc-900/10 border-r border-zinc-800/50 pr-4 h-full flex flex-col">
-            <div className="flex items-center gap-3 mb-6 px-2 text-emerald-500/80">
+            <div className="flex items-center gap-3 mb-2 px-2 text-emerald-500/80 shrink-0">
               <Network className="w-4 h-4" />
               <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
             
-            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 scrollbar-hide">
+            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 scrollbar-hide pt-2">
               {/* Connecting Line */}
               <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
                 <div 
@@ -229,7 +226,7 @@ const App: React.FC = () => {
               {steps.map((step, idx) => (
                 <div 
                   key={step.id} 
-                  ref={el => { stepRefs.current[idx] = el; }}
+                  ref={(el) => { stepRefs.current[idx] = el; }}
                   className="relative flex gap-6 items-center z-10"
                 >
                    {/* Packet Animation - localized to the current active step context roughly */}
@@ -270,7 +267,7 @@ const App: React.FC = () => {
           {/* Center/Right Panel: Input, Terminal, Data */}
           <div className="lg:col-span-9 flex flex-col h-full overflow-y-auto pr-2 pb-10">
             
-            {/* INPUT SECTION - MOVED HERE */}
+            {/* INPUT SECTION - CENTER COLUMN */}
             <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0">
                <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none"></div>
                <form onSubmit={runTrace} className="relative flex gap-4">
@@ -297,7 +294,7 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
               
-              {/* Column 1: Terminal & Certs */}
+              {/* Column 1: Terminal (Protocol Analyzer) */}
               <div className="space-y-8 flex flex-col">
                 {/* Protocol Analyzer */}
                 <div className="bg-black border border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-[400px] shadow-lg shrink-0">

@@ -1,3 +1,4 @@
+
 export interface Env {
   GEMINI_API_KEY: string;
 }
@@ -10,18 +11,36 @@ export interface ExecutionContext {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    
+    // CORS headers for local development or cross-origin access if needed
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
+    // Handle OPTIONS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
 
     // Handle API route for Audit
     if (url.pathname === '/api/audit' && request.method === 'POST') {
       try {
         const { domain } = await request.json() as { domain: string };
         
+        // 1. Verify API Key exists in Secrets
         if (!env.GEMINI_API_KEY) {
-          return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured in secrets" }), { status: 500 });
+          console.error("Missing GEMINI_API_KEY in secrets");
+          return new Response(JSON.stringify({ error: "Server misconfiguration: Missing API Key" }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+          });
         }
 
-        // Call Gemini API via REST (No SDK needed for Worker to keep it lightweight)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+        // 2. Call Gemini API via REST
+        // Using gemini-3-flash-preview as requested for best text performance
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${env.GEMINI_API_KEY}`;
         
         const prompt = `Perform a "Master's Level" security and infrastructure audit for the domain: ${domain}.
       
@@ -41,22 +60,29 @@ export default {
           })
         });
 
+        if (!response.ok) {
+           const errText = await response.text();
+           console.error("Gemini API Error:", errText);
+           throw new Error(`Gemini API returned ${response.status}`);
+        }
+
         const data = await response.json() as any;
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Audit failed to generate.";
 
         return new Response(JSON.stringify({ text }), {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
 
       } catch (error) {
-        return new Response(JSON.stringify({ error: "Failed to connect to AI service" }), { status: 500 });
+        console.error("Worker Error:", error);
+        return new Response(JSON.stringify({ error: "Failed to connect to AI service" }), { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
       }
     }
 
-    // Serve static assets (React App) if not an API call
-    // The 'assets' binding is handled automatically by Cloudflare when 'assets' is defined in wrangler.json
-    // but we return 404 here for the worker logic, letting the asset server take over for non-matched routes
-    // OR if using the new Assets architecture, we just return fetch(request)
+    // Fallback for non-API routes (if Assets binding misses)
     return new Response("Not Found", { status: 404 });
   },
 };
