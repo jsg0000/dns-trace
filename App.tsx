@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Terminal, Activity, ArrowRight, BookOpen, Globe, Cpu, Layers, ShieldCheck, Zap, 
-  Network, ExternalLink, Camera, MessageSquare, Shield, CheckCircle2, AlertTriangle, Info
+  Network, ExternalLink, Camera, MessageSquare, Shield, CheckCircle2, AlertTriangle, Info, Lock
 } from 'lucide-react';
 import { fetchDNS, getTLD, cleanDomain } from './services/dnsService';
 import { getTechnicalInsight } from './services/geminiService';
@@ -234,7 +234,7 @@ const App: React.FC = () => {
               <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
             
-            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-32 space-y-10 pt-2">
+            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pt-2 scrollbar-hide">
               {/* Connecting Line */}
               <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
                 <div 
@@ -248,7 +248,7 @@ const App: React.FC = () => {
                 <div 
                   key={step.id} 
                   ref={(el) => { stepRefs.current[idx] = el; }}
-                  className="relative flex gap-6 items-center z-10"
+                  className="relative flex gap-6 items-center z-10 mb-10 last:mb-0"
                 >
                    {/* Packet Animation */}
                    {idx === activeStepIndex && isTracing && (
@@ -282,12 +282,15 @@ const App: React.FC = () => {
                   </div>
                 </div>
               ))}
+              
+              {/* Spacer for bottom scrolling */}
+              <div className="h-24 w-full"></div>
             </div>
           </div>
 
           {/* Column 2: Input & Terminal */}
           {/* Mobile: Order 1, Auto Height, Visible Overflow for window scrolling */}
-          <div ref={col2Ref} className="lg:col-span-4 order-1 lg:order-2 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-0 lg:pb-32 scroll-smooth">
+          <div ref={col2Ref} className="lg:col-span-4 order-1 lg:order-2 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-0 scroll-smooth">
             
             {/* STICKY INPUT */}
             <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0 sticky top-0 z-40 backdrop-blur-md">
@@ -347,7 +350,7 @@ const App: React.FC = () => {
 
             {/* Final Render Preview */}
             {activeStepIndex === 8 && (
-               <div className="mt-8 mb-8 lg:mb-20 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
+               <div className="mt-8 mb-8 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
                   <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-1 overflow-hidden">
                     <div className="bg-black/50 backdrop-blur px-4 py-2 flex items-center gap-2 border-b border-zinc-800/50">
                       <div className="flex gap-1.5">
@@ -380,11 +383,14 @@ const App: React.FC = () => {
                </div>
             )}
             
+            {/* Spacer for bottom scrolling */}
+            <div className="h-32 w-full shrink-0"></div>
+            
           </div>
 
           {/* Column 3: Analysis */}
           {/* Mobile: Order 3, Auto Height */}
-          <div className="lg:col-span-5 order-3 lg:order-3 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-32 scroll-smooth space-y-6">
+          <div className="lg:col-span-5 order-3 lg:order-3 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-0 scroll-smooth space-y-6">
               
               {/* Certificate Card */}
               {certInfo && (
@@ -437,9 +443,12 @@ const App: React.FC = () => {
                   </div>
               )}
 
-              {/* Footer for Column 3 */}
-              <div className="border-t border-zinc-800 pt-6 mt-8 flex justify-between items-center text-[9px] text-zinc-600 font-mono uppercase tracking-widest opacity-50">
-                  <span>CONFIDENTIAL // AUTH_TOKEN_REQ</span>
+              {/* Footer for Column 3 with Spacer Logic built-in via padding */}
+              <div className="mt-8 border-t border-zinc-800 pt-6 pb-32 flex justify-between items-start text-[9px] text-zinc-600 font-mono uppercase tracking-widest">
+                  <div className="flex flex-col gap-1">
+                     <span className="text-emerald-900 font-bold flex items-center gap-2"><Lock className="w-3 h-3" /> SECURE_ENCLAVE_ACTIVE</span>
+                     <span>CONFIDENTIAL // AUTH_TOKEN_REQ</span>
+                  </div>
                   <span>ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
               </div>
           </div>
