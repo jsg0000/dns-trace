@@ -36,6 +36,7 @@ const App: React.FC = () => {
   
   const logRef = useRef<HTMLDivElement>(null);
   const traceListRef = useRef<HTMLDivElement>(null);
+  const col2Ref = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Auto-scroll Logs
@@ -54,18 +55,26 @@ const App: React.FC = () => {
       const containerRect = container.getBoundingClientRect();
       const activeRect = activeElement.getBoundingClientRect();
       
-      // Calculate relative position within the scrolling container
-      // We want the element to be in the center of the container
       const currentScrollTop = container.scrollTop;
-      const relativeTop = activeRect.top - containerRect.top; // Distance from viewport top of container to viewport top of element
-      
-      // Desired scroll position: Current Scroll + Relative Top - (Container Height / 2) + (Element Height / 2)
+      const relativeTop = activeRect.top - containerRect.top;
       const targetScrollTop = currentScrollTop + relativeTop - (containerRect.height / 2) + (activeRect.height / 2);
 
       container.scrollTo({
         top: targetScrollTop,
         behavior: 'smooth'
       });
+    }
+  }, [activeStepIndex]);
+
+  // Auto-scroll Column 2 to bottom when trace finishes to show render
+  useEffect(() => {
+    if (activeStepIndex === 8 && col2Ref.current) {
+      setTimeout(() => {
+        col2Ref.current?.scrollTo({
+          top: col2Ref.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 500); // Slight delay to ensure DOM render
     }
   }, [activeStepIndex]);
 
@@ -215,16 +224,17 @@ const App: React.FC = () => {
 
       {/* Main Layout */}
       <main className="flex-1 max-w-[1800px] mx-auto w-full px-8 py-8 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
           
-          {/* Left Panel: Route Visualization (Scrollable) */}
+          {/* Column 1: Route Visualization (3 cols - 25%) */}
           <div className="lg:col-span-3 bg-zinc-900/10 border-r border-zinc-800/50 pr-4 h-full flex flex-col">
             <div className="flex items-center gap-3 mb-2 px-2 text-emerald-500/80 shrink-0">
               <Network className="w-4 h-4" />
               <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
             
-            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 scrollbar-hide pt-2">
+            {/* REMOVED scrollbar-hide to allow scrolling */}
+            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 pt-2">
               {/* Connecting Line */}
               <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
                 <div 
@@ -275,40 +285,36 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Center/Right Panel: Input, Terminal, Data */}
-          <div className="lg:col-span-9 flex flex-col h-full overflow-y-auto pr-2 pb-10 scroll-smooth">
+          {/* Column 2: Input & Terminal (4 cols - 33% - "1/3 wide") */}
+          <div ref={col2Ref} className="lg:col-span-4 flex flex-col h-full overflow-y-auto pr-2 pb-10 scroll-smooth">
             
-            {/* INPUT SECTION - CENTER COLUMN */}
+            {/* STICKY INPUT */}
             <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0 sticky top-0 z-40 backdrop-blur-md">
                <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none"></div>
                <form onSubmit={runTrace} className="relative flex gap-4">
                 <div className="relative flex-1">
                   <input
                     type="text"
-                    placeholder="ENTER TARGET HOSTNAME (e.g. google.com)"
-                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-xl py-4 pl-12 pr-4 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all placeholder:text-zinc-600 tracking-wider"
+                    placeholder="ENTER DOMAIN (e.g. google.com)"
+                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-xl py-3 pl-10 pr-4 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all placeholder:text-zinc-600 tracking-wider"
                     value={domainInput}
                     onChange={(e) => setDomainInput(e.target.value)}
                     disabled={isTracing}
                   />
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
                 </div>
                 <button
                   type="submit"
                   disabled={isTracing || !domainInput}
-                  className="px-8 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-900/20 whitespace-nowrap"
+                  className="px-5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.1em] transition-all shadow-lg shadow-emerald-900/20 whitespace-nowrap"
                 >
-                  {isTracing ? 'TRACING...' : 'INITIATE'}
+                  {isTracing ? 'BUSY' : 'GO'}
                 </button>
               </form>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
-              
-              {/* Column 1: Terminal (Protocol Analyzer) */}
-              <div className="space-y-8 flex flex-col">
-                {/* Protocol Analyzer */}
-                <div className="bg-black border border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-[400px] shadow-lg shrink-0">
+            {/* Protocol Analyzer - Reduced height to 320px to allow space for Render */}
+            <div className="bg-black border border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-[320px] shadow-lg shrink-0">
                   <div className="bg-zinc-900/80 px-5 py-3 border-b border-zinc-800 flex items-center justify-between backdrop-blur-sm">
                     <div className="flex items-center gap-2">
                       <Terminal className="w-3.5 h-3.5 text-emerald-500" />
@@ -336,65 +342,11 @@ const App: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Certificate Card */}
-                <CertificateCard cert={certInfo!} isVisible={!!certInfo} />
-              </div>
-
-              {/* Column 2: AI Audit & Headers */}
-              <div className="space-y-8">
-                 {/* AI Audit */}
-                 <div className={`bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-8 relative overflow-hidden transition-all duration-1000 ${aiInsight ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4 grayscale'}`}>
-                  {aiInsight ? (
-                     <>
-                      <div className="flex items-center gap-4 mb-5">
-                        <div className="bg-purple-500/10 p-2.5 rounded-xl text-purple-400 border border-purple-500/20">
-                          <BookOpen className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-black text-white uppercase tracking-tight">Expert Audit</h3>
-                          <p className="text-[9px] text-purple-500 font-bold uppercase tracking-widest">Master's Intelligence</p>
-                        </div>
-                      </div>
-                      <div className="text-[11px] leading-relaxed text-zinc-300 font-medium whitespace-pre-wrap">
-                        {aiInsight}
-                      </div>
-                     </>
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-zinc-700 space-y-4 py-12">
-                      <Cpu className="w-12 h-12 opacity-20" />
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-center opacity-50">Waiting for Handshake completion...</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Headers */}
-                {headers.length > 0 && (
-                  <div className="bg-zinc-900/20 border border-zinc-800/80 rounded-3xl p-6 animate-in slide-in-from-bottom-5 fade-in duration-700">
-                    <div className="flex items-center gap-3 mb-4">
-                      <ShieldCheck className="w-4 h-4 text-orange-500" />
-                      <h3 className="text-xs font-black text-white uppercase tracking-wider">Header Hardening</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {headers.map((h, i) => (
-                        <div key={i} className="bg-black/40 border border-zinc-800/50 p-3 rounded-xl flex items-center justify-between group hover:border-emerald-500/20 transition-colors">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-mono text-zinc-300">{h.key}</span>
-                            <span className="text-[9px] text-zinc-600 truncate max-w-[200px]">{h.value}</span>
-                          </div>
-                          {h.status === 'secure' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/80" /> : <AlertTriangle className="w-3.5 h-3.5 text-orange-500/80" />}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Final Render */}
+            {/* Final Render Preview */}
             {activeStepIndex === 8 && (
-               <div className="mt-8 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
+               <div className="mt-8 mb-20 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
                   <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-1 overflow-hidden">
                     <div className="bg-black/50 backdrop-blur px-4 py-2 flex items-center gap-2 border-b border-zinc-800/50">
                       <div className="flex gap-1.5">
@@ -427,6 +379,61 @@ const App: React.FC = () => {
                </div>
             )}
             
+          </div>
+
+          {/* Column 3: Analysis (5 cols - 42%) */}
+          <div className="lg:col-span-5 flex flex-col h-full overflow-y-auto pr-2 pb-10 scroll-smooth space-y-6">
+              
+              {/* Certificate Card */}
+              {certInfo && (
+                <CertificateCard cert={certInfo} isVisible={true} />
+              )}
+              
+              {/* AI Audit */}
+              <div className={`bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-8 relative overflow-hidden transition-all duration-1000 ${aiInsight ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4 grayscale'}`}>
+                  {aiInsight ? (
+                     <>
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className="bg-purple-500/10 p-2.5 rounded-xl text-purple-400 border border-purple-500/20">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white uppercase tracking-tight">Expert Audit</h3>
+                          <p className="text-[9px] text-purple-500 font-bold uppercase tracking-widest">Master's Intelligence</p>
+                        </div>
+                      </div>
+                      <div className="text-[11px] leading-relaxed text-zinc-300 font-medium whitespace-pre-wrap">
+                        {aiInsight}
+                      </div>
+                     </>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-zinc-700 space-y-4 py-12">
+                      <Cpu className="w-12 h-12 opacity-20" />
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-center opacity-50">Waiting for Handshake completion...</p>
+                    </div>
+                  )}
+              </div>
+
+              {/* Headers */}
+              {headers.length > 0 && (
+                  <div className="bg-zinc-900/20 border border-zinc-800/80 rounded-3xl p-6 animate-in slide-in-from-bottom-5 fade-in duration-700">
+                    <div className="flex items-center gap-3 mb-4">
+                      <ShieldCheck className="w-4 h-4 text-orange-500" />
+                      <h3 className="text-xs font-black text-white uppercase tracking-wider">Header Hardening</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {headers.map((h, i) => (
+                        <div key={i} className="bg-black/40 border border-zinc-800/50 p-3 rounded-xl flex items-center justify-between group hover:border-emerald-500/20 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-mono text-zinc-300">{h.key}</span>
+                            <span className="text-[9px] text-zinc-600 truncate max-w-[200px]">{h.value}</span>
+                          </div>
+                          {h.status === 'secure' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/80" /> : <AlertTriangle className="w-3.5 h-3.5 text-orange-500/80" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+              )}
           </div>
         </div>
       </main>

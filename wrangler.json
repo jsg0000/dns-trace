@@ -5,7 +5,7 @@
   "assets": {
     "directory": "./dist"
   },
-  "compatibility_date": "2026-02-06",
+  "compatibility_date": "2026-02-07",
   "observability": {
     "enabled": true
   }
