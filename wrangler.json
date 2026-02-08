@@ -1,5 +1,7 @@
+
 {
   "name": "cyber-trace",
+  "main": "worker.ts",
   "assets": {
     "directory": "./dist"
   },

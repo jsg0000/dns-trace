@@ -35,12 +35,25 @@ const App: React.FC = () => {
   const [headers, setHeaders] = useState<SecurityHeader[]>([]);
   
   const logRef = useRef<HTMLDivElement>(null);
+  const traceListRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Auto-scroll Logs
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [packetLogs]);
+
+  // Auto-scroll Trace Steps
+  useEffect(() => {
+    if (activeStepIndex >= 0 && stepRefs.current[activeStepIndex]) {
+      stepRefs.current[activeStepIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [activeStepIndex]);
 
   const addLog = (msg: string, type: 'info' | 'pkt' | 'success' | 'err' = 'info') => {
     setPacketLogs(prev => [...prev, { msg, type }]);
@@ -113,14 +126,13 @@ const App: React.FC = () => {
 
       setActiveStepIndex(4); updateStep(4, { status: StepStatus.ACTIVE });
       addLog("Authoritative Resource Record Retrieval...", "pkt");
-      const [dnsData, insight] = await Promise.all([
-        fetchDNS(domain),
-        getTechnicalInsight(domain)
-      ]);
+      // Trigger AI audit in background
+      getTechnicalInsight(domain).then(setAiInsight);
+      
+      const dnsData = await fetchDNS(domain);
       const ip = dnsData.Answer?.find(a => a.type === 1)?.data || '0.0.0.0';
       updateStep(4, { status: StepStatus.COMPLETED, liveResult: [`A -> ${ip}`] });
       setResults(dnsData);
-      setAiInsight(insight);
       addLog(`Resolution Complete. Endpoint: ${ip}`, "success");
       await slowDelay(1500);
 
@@ -165,16 +177,17 @@ const App: React.FC = () => {
 
   const getPacketTop = () => {
     if (activeStepIndex === -1) return -40;
+    // Calculate position based on the active step's element if available, fallback to estimation
     return (activeStepIndex * 100) + 40; 
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-300 selection:bg-emerald-500/30 overflow-x-hidden">
+    <div className="h-screen bg-[#050505] text-zinc-300 selection:bg-emerald-500/30 overflow-hidden flex flex-col">
       <div className="scanline"></div>
       
-      {/* Dynamic Header */}
-      <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-2xl border-b border-zinc-900 px-8 py-4">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+      {/* Header */}
+      <nav className="flex-none bg-black/80 backdrop-blur-2xl border-b border-zinc-900 px-8 py-4 z-50">
+        <div className="max-w-[1800px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-5">
             <div className="bg-emerald-600/20 p-2.5 rounded-xl border border-emerald-500/30">
               <Shield className="text-emerald-500 w-5 h-5" />
@@ -192,47 +205,41 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="max-w-[1600px] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      {/* Main Layout */}
+      <main className="flex-1 max-w-[1800px] mx-auto w-full px-8 py-8 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
           
-          {/* Left Panel: Initialization & Traversal */}
-          <div className="lg:col-span-4 space-y-12">
-            <div className="bg-zinc-900/20 border border-zinc-800/80 rounded-[2.5rem] p-10 backdrop-blur-xl relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl pointer-events-none"></div>
-              <form onSubmit={runTrace} className="relative">
-                <input
-                  type="text"
-                  placeholder="Target Host: e.g. proton.me"
-                  className="w-full bg-black/60 border border-zinc-800 rounded-2xl py-5 pl-14 pr-4 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all"
-                  value={domainInput}
-                  onChange={(e) => setDomainInput(e.target.value)}
-                  disabled={isTracing}
-                />
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-700 group-focus-within:text-emerald-500 transition-colors" />
-                <button
-                  type="submit"
-                  disabled={isTracing || !domainInput}
-                  className="absolute right-3 top-3 bottom-3 px-6 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-900/20"
-                >
-                  {isTracing ? 'SCANNING' : 'START TRACE'}
-                </button>
-              </form>
+          {/* Left Panel: Route Visualization (Scrollable) */}
+          <div className="lg:col-span-3 bg-zinc-900/10 border-r border-zinc-800/50 pr-4 h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-6 px-2 text-emerald-500/80">
+              <Network className="w-4 h-4" />
+              <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
-
-            {/* Path visualization */}
-            <div className="relative pl-10 space-y-10">
-              <div className="absolute left-[58px] top-10 bottom-10 w-[2px] bg-zinc-900">
+            
+            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 scrollbar-hide">
+              {/* Connecting Line */}
+              <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
                 <div 
-                  className="absolute top-0 w-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] transition-all duration-1000"
+                  className="absolute top-0 w-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] transition-all duration-700 ease-out"
                   style={{ height: `${(Math.max(0, activeStepIndex) / (steps.length - 1)) * 100}%` }}
                 />
               </div>
 
-              <DNSPacket isVisible={isTracing || activeStepIndex > -1} top={getPacketTop() + 20} />
-
+              {/* Steps */}
               {steps.map((step, idx) => (
-                <div key={step.id} className="flex gap-8 items-center">
-                  <div className="w-14 flex justify-center flex-shrink-0">
+                <div 
+                  key={step.id} 
+                  ref={el => { stepRefs.current[idx] = el; }}
+                  className="relative flex gap-6 items-center z-10"
+                >
+                   {/* Packet Animation - localized to the current active step context roughly */}
+                   {idx === activeStepIndex && isTracing && (
+                     <div className="absolute left-[21px] top-1/2 -translate-y-1/2 w-4 h-4 z-50">
+                        <div className="w-full h-full bg-orange-500 rounded-full shadow-[0_0_10px_#f97316] animate-ping opacity-75"></div>
+                     </div>
+                   )}
+
+                  <div className="w-16 flex justify-center flex-shrink-0">
                     <ServerNode 
                       type={step.serverType} 
                       title={step.title} 
@@ -240,15 +247,15 @@ const App: React.FC = () => {
                       isActive={activeStepIndex === idx}
                     />
                   </div>
-                  <div className={`flex-1 transition-all duration-700 ${activeStepIndex >= idx ? 'opacity-100 translate-x-0' : 'opacity-10 translate-x-4'}`}>
+                  <div className={`flex-1 transition-all duration-700 ${activeStepIndex >= idx ? 'opacity-100 translate-x-0' : 'opacity-30 translate-x-2'}`}>
                     <div className="flex items-center gap-2 mb-1">
-                       <h4 className="text-[12px] font-black text-zinc-100 uppercase tracking-tighter">{step.description}</h4>
-                       {step.status === StepStatus.COMPLETED && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                       <h4 className="text-[11px] font-black text-zinc-100 uppercase tracking-tight">{step.description}</h4>
+                       {step.status === StepStatus.COMPLETED && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
                     </div>
                     {step.liveResult && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
+                      <div className="flex flex-wrap gap-1.5 mt-1">
                         {step.liveResult.map((r, i) => (
-                          <span key={i} className="text-[9px] font-mono bg-zinc-900 text-emerald-400/80 px-2 py-1 rounded border border-zinc-800 uppercase">
+                          <span key={i} className="text-[9px] font-mono bg-zinc-900 text-emerald-400/90 px-1.5 py-0.5 rounded border border-zinc-800 uppercase shadow-sm">
                             {r}
                           </span>
                         ))}
@@ -260,156 +267,170 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Panel: Data Terminals & Audit */}
-          <div className="lg:col-span-8 space-y-10">
+          {/* Center/Right Panel: Input, Terminal, Data */}
+          <div className="lg:col-span-9 flex flex-col h-full overflow-y-auto pr-2 pb-10">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {/* PCAP Terminal */}
-              <div className="bg-black border border-zinc-800/80 rounded-[2.5rem] overflow-hidden flex flex-col h-[450px] shadow-2xl">
-                <div className="bg-zinc-900/40 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="w-4 h-4 text-emerald-500" />
-                    <span className="text-[11px] font-black uppercase text-zinc-400 tracking-widest">Protocol Analyzer</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/40"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/40"></div>
-                  </div>
-                </div>
-                <div ref={logRef} className="flex-1 p-6 font-mono text-[10px] overflow-y-auto space-y-2.5 scroll-smooth">
-                  {packetLogs.length === 0 && <div className="text-zinc-800 font-bold animate-pulse italic">LISTENING FOR FRAMES...</div>}
-                  {packetLogs.map((log, i) => (
-                    <div key={i} className="flex gap-4 animate-in fade-in slide-in-from-left-2 duration-400">
-                      <span className="text-zinc-800 tabular-nums">[{new Date().toLocaleTimeString()}]</span>
-                      <span className={`
-                        ${log.type === 'pkt' ? 'text-blue-500' : ''}
-                        ${log.type === 'success' ? 'text-emerald-500 font-bold' : ''}
-                        ${log.type === 'err' ? 'text-red-500 font-black underline' : ''}
-                        ${log.type === 'info' ? 'text-zinc-600' : ''}
-                      `}>
-                        {log.msg}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Certificate & AI Audit */}
-              <div className="space-y-10">
-                <CertificateCard cert={certInfo!} isVisible={!!certInfo} />
-                
-                <div className={`bg-gradient-to-br from-emerald-900/10 to-transparent border border-zinc-800/80 rounded-[2.5rem] p-10 transition-all duration-1000 ${aiInsight ? 'opacity-100' : 'opacity-0 translate-y-10'}`}>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="bg-emerald-600/20 p-3 rounded-2xl text-emerald-400 border border-emerald-500/20">
-                      <BookOpen className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-black text-white uppercase tracking-tight">Expert Audit</h3>
-                      <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Master's Intelligence Synthesis</p>
-                    </div>
-                  </div>
-                  <p className="text-[13px] leading-relaxed text-zinc-400 italic font-medium">
-                    {aiInsight}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Header Audit Console */}
-            {headers.length > 0 && (
-              <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-[2.5rem] p-10 space-y-8 animate-in slide-in-from-bottom-10 duration-1000">
-                <div className="flex items-center gap-4">
-                  <div className="bg-orange-600/20 p-3 rounded-2xl text-orange-400 border border-orange-500/20">
-                    <Cpu className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tighter">Security Header Analysis</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {headers.map((h, i) => (
-                    <div key={i} className="bg-black/40 border border-zinc-800 p-6 rounded-2xl group hover:border-emerald-500/30 transition-colors">
-                      <div className="flex items-start justify-between mb-3">
-                        <span className="text-[11px] font-mono text-zinc-200 break-all pr-4">{h.key}</span>
-                        {h.status === 'secure' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />}
-                      </div>
-                      <div className="text-[10px] text-zinc-600 font-mono mb-3 truncate italic">{h.value}</div>
-                      <div className="flex gap-2 items-center text-[9px] text-zinc-500 bg-zinc-900/50 p-2 rounded-lg">
-                        <Info className="w-3 h-3 text-zinc-700" />
-                        {h.description}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Final Page Rendering */}
-            <div className={`transition-all duration-1000 delay-500 ${activeStepIndex === 8 ? 'opacity-100' : 'opacity-0 translate-y-20'}`}>
-              <div className="bg-zinc-900/10 border border-zinc-800/80 rounded-[3rem] p-12 space-y-10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
-                    <div className="bg-purple-600/20 p-5 rounded-3xl text-purple-400 border border-purple-500/20">
-                      <Camera className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="text-3xl font-black text-white tracking-tighter uppercase">Payload Visualization</h3>
-                      <p className="text-[10px] text-zinc-500 font-mono tracking-[0.4em] uppercase">{activeDomain} // SECURE_PORT_443</p>
-                    </div>
-                  </div>
-                  <a href={`https://${activeDomain}`} target="_blank" className="flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-emerald-900/20">
-                    Live Session <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-
-                <div className="aspect-video w-full bg-black rounded-[2.5rem] border border-zinc-800 overflow-hidden relative shadow-3xl group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10 p-12 flex flex-col justify-end">
-                    <div className="text-[11px] font-mono text-white/40 space-y-1 bg-black/40 backdrop-blur-md p-6 rounded-2xl w-fit">
-                      <div>CIPHER_STREAM: TLS_1.3_AES_256</div>
-                      <div>FRAME_ENCODING: BINARY_HTTP2</div>
-                      <div>RENDER_TIME: 1.4s</div>
-                    </div>
-                  </div>
-                  <img 
-                    src={`https://s0.wp.com/mshots/v1/https://${activeDomain}?w=1600`} 
-                    alt="Page Rendering"
-                    className="w-full h-full object-cover grayscale-[0.2] transition-all duration-[3000ms] group-hover:grayscale-0 group-hover:scale-105"
-                    onLoad={() => addLog("DOM visualization layer rendered.", "success")}
+            {/* INPUT SECTION - MOVED HERE */}
+            <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0">
+               <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none"></div>
+               <form onSubmit={runTrace} className="relative flex gap-4">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="ENTER TARGET HOSTNAME (e.g. google.com)"
+                    className="w-full bg-zinc-900/50 border border-zinc-700 rounded-xl py-4 pl-12 pr-4 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all placeholder:text-zinc-600 tracking-wider"
+                    value={domainInput}
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    disabled={isTracing}
                   />
-                  <div className="absolute inset-0 border border-white/5 pointer-events-none"></div>
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500 group-focus-within:text-emerald-500 transition-colors" />
                 </div>
-              </div>
+                <button
+                  type="submit"
+                  disabled={isTracing || !domainInput}
+                  className="px-8 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-900/20 whitespace-nowrap"
+                >
+                  {isTracing ? 'TRACING...' : 'INITIATE'}
+                </button>
+              </form>
             </div>
 
-            {/* Empty State */}
-            {!results && !isTracing && (
-              <div className="h-full min-h-[400px] flex items-center justify-center border-4 border-dashed border-zinc-900/50 rounded-[4rem] group hover:border-emerald-500/10 transition-colors">
-                 <div className="text-center space-y-8">
-                    <div className="relative inline-block">
-                      <Globe className="w-24 h-24 text-zinc-900 group-hover:text-emerald-900/20 transition-colors" />
-                      <div className="absolute inset-0 animate-pulse bg-emerald-500/5 blur-3xl rounded-full"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
+              
+              {/* Column 1: Terminal & Certs */}
+              <div className="space-y-8 flex flex-col">
+                {/* Protocol Analyzer */}
+                <div className="bg-black border border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-[400px] shadow-lg shrink-0">
+                  <div className="bg-zinc-900/80 px-5 py-3 border-b border-zinc-800 flex items-center justify-between backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <Terminal className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Protocol Analyzer</span>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                      <div className="w-2 h-2 rounded-full bg-zinc-700"></div>
+                    </div>
+                  </div>
+                  <div ref={logRef} className="flex-1 p-5 font-mono text-[10px] overflow-y-auto space-y-2 scroll-smooth bg-black/50">
+                    {packetLogs.length === 0 && <div className="text-zinc-700 font-bold animate-pulse italic mt-20 text-center">AWAITING PACKET CAPTURE...</div>}
+                    {packetLogs.map((log, i) => (
+                      <div key={i} className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                        <span className="text-zinc-700 select-none">›</span>
+                        <span className={`
+                          break-all
+                          ${log.type === 'pkt' ? 'text-blue-400' : ''}
+                          ${log.type === 'success' ? 'text-emerald-400 font-bold' : ''}
+                          ${log.type === 'err' ? 'text-red-400 font-bold' : ''}
+                          ${log.type === 'info' ? 'text-zinc-500' : ''}
+                        `}>
+                          {log.msg}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Certificate Card */}
+                <CertificateCard cert={certInfo!} isVisible={!!certInfo} />
+              </div>
+
+              {/* Column 2: AI Audit & Headers */}
+              <div className="space-y-8">
+                 {/* AI Audit */}
+                 <div className={`bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-8 relative overflow-hidden transition-all duration-1000 ${aiInsight ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4 grayscale'}`}>
+                  {aiInsight ? (
+                     <>
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className="bg-purple-500/10 p-2.5 rounded-xl text-purple-400 border border-purple-500/20">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-white uppercase tracking-tight">Expert Audit</h3>
+                          <p className="text-[9px] text-purple-500 font-bold uppercase tracking-widest">Master's Intelligence</p>
+                        </div>
+                      </div>
+                      <div className="text-[11px] leading-relaxed text-zinc-300 font-medium whitespace-pre-wrap">
+                        {aiInsight}
+                      </div>
+                     </>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-zinc-700 space-y-4 py-12">
+                      <Cpu className="w-12 h-12 opacity-20" />
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-center opacity-50">Waiting for Handshake completion...</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Headers */}
+                {headers.length > 0 && (
+                  <div className="bg-zinc-900/20 border border-zinc-800/80 rounded-3xl p-6 animate-in slide-in-from-bottom-5 fade-in duration-700">
+                    <div className="flex items-center gap-3 mb-4">
+                      <ShieldCheck className="w-4 h-4 text-orange-500" />
+                      <h3 className="text-xs font-black text-white uppercase tracking-wider">Header Hardening</h3>
                     </div>
                     <div className="space-y-3">
-                      <h3 className="text-2xl font-black text-zinc-700 uppercase tracking-tighter">System Idle</h3>
-                      <p className="text-zinc-800 text-sm font-medium tracking-wide">
-                        Initialize hostname to begin deep-stack traversal.
-                      </p>
+                      {headers.map((h, i) => (
+                        <div key={i} className="bg-black/40 border border-zinc-800/50 p-3 rounded-xl flex items-center justify-between group hover:border-emerald-500/20 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-mono text-zinc-300">{h.key}</span>
+                            <span className="text-[9px] text-zinc-600 truncate max-w-[200px]">{h.value}</span>
+                          </div>
+                          {h.status === 'secure' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/80" /> : <AlertTriangle className="w-3.5 h-3.5 text-orange-500/80" />}
+                        </div>
+                      ))}
                     </div>
-                 </div>
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Final Render */}
+            {activeStepIndex === 8 && (
+               <div className="mt-8 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
+                  <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-1 overflow-hidden">
+                    <div className="bg-black/50 backdrop-blur px-4 py-2 flex items-center gap-2 border-b border-zinc-800/50">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-red-500/20"></div>
+                        <div className="w-2 h-2 rounded-full bg-yellow-500/20"></div>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500/20"></div>
+                      </div>
+                      <div className="flex-1 text-center">
+                        <span className="text-[9px] font-mono text-zinc-500 bg-zinc-900/50 px-2 py-0.5 rounded">https://{activeDomain}</span>
+                      </div>
+                    </div>
+                    <div className="relative aspect-[21/9] bg-black group">
+                      <img 
+                        src={`https://s0.wp.com/mshots/v1/https://${activeDomain}?w=1200`} 
+                        className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000"
+                        alt="Render"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+                         <div className="flex items-center gap-4">
+                           <div className="bg-emerald-500 text-black font-bold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
+                             Secure Connection
+                           </div>
+                           <div className="text-[10px] font-mono text-emerald-400">
+                             GET 200 OK • {new Date().toLocaleTimeString()}
+                           </div>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+               </div>
             )}
+            
           </div>
         </div>
       </main>
 
-      {/* Floating System Status */}
-      <div className="fixed bottom-10 right-10 z-50">
-        <div className="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800 px-6 py-3 rounded-2xl text-[10px] font-black text-zinc-500 tracking-[0.3em] flex items-center gap-4 shadow-2xl">
-          <div className="relative">
-            <Activity className="w-4 h-4 text-emerald-500" />
-            <div className="absolute inset-0 animate-ping bg-emerald-500/40 rounded-full"></div>
+      {/* Status Bar */}
+      <div className="fixed bottom-6 right-6 z-50 pointer-events-none">
+        <div className="bg-black/80 backdrop-blur-md border border-zinc-800 pl-4 pr-5 py-2.5 rounded-full text-[9px] font-black text-zinc-500 tracking-[0.2em] flex items-center gap-3 shadow-2xl">
+          <div className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </div>
-          READY_STATE // PACKET_INSPECTOR_ACTIVE
+          SYSTEM_ONLINE
         </div>
       </div>
     </div>
