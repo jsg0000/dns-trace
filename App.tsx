@@ -199,22 +199,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-[#050505] text-zinc-300 selection:bg-emerald-500/30 overflow-hidden flex flex-col">
+    <div className="lg:h-screen min-h-screen bg-[#050505] text-zinc-300 selection:bg-emerald-500/30 lg:overflow-hidden overflow-y-auto flex flex-col">
       <div className="scanline"></div>
       
       {/* Header */}
-      <nav className="flex-none bg-black/80 backdrop-blur-2xl border-b border-zinc-900 px-8 py-4 z-50">
+      <nav className="flex-none bg-black/80 backdrop-blur-2xl border-b border-zinc-900 px-4 lg:px-8 py-4 z-50">
         <div className="max-w-[1800px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            <div className="bg-emerald-600/20 p-2.5 rounded-xl border border-emerald-500/30">
-              <Shield className="text-emerald-500 w-5 h-5" />
+          <div className="flex items-center gap-3 lg:gap-5">
+            <div className="bg-emerald-600/20 p-2 lg:p-2.5 rounded-xl border border-emerald-500/30">
+              <Shield className="text-emerald-500 w-4 h-4 lg:w-5 lg:h-5" />
             </div>
-            <h1 className="text-xl font-black text-white tracking-tight">
+            <h1 className="text-lg lg:text-xl font-black text-white tracking-tight">
               CYBER<span className="text-emerald-500 italic">TRACE</span>
-              <span className="ml-3 text-[9px] bg-zinc-800 px-2 py-1 rounded text-zinc-500 font-mono tracking-widest uppercase">Sec_Audit_v3.0</span>
+              <span className="hidden lg:inline ml-3 text-[9px] bg-zinc-800 px-2 py-1 rounded text-zinc-500 font-mono tracking-widest uppercase">Sec_Audit_v3.0</span>
             </h1>
           </div>
-          <div className="flex gap-10 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">
+          <div className="hidden lg:flex gap-10 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">
             <span className="flex items-center gap-2 hover:text-emerald-500 transition-colors cursor-help"><Layers className="w-3.5 h-3.5" /> Stack_Depth</span>
             <span className="flex items-center gap-2 hover:text-emerald-500 transition-colors cursor-help text-emerald-500"><ShieldCheck className="w-3.5 h-3.5" /> E2E_Encrypted</span>
             <span className="flex items-center gap-2 hover:text-emerald-500 transition-colors cursor-help"><Zap className="w-3.5 h-3.5" /> Latency_Optimized</span>
@@ -223,17 +223,17 @@ const App: React.FC = () => {
       </nav>
 
       {/* Main Layout */}
-      <main className="flex-1 max-w-[1800px] mx-auto w-full px-8 py-8 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+      <main className="flex-1 max-w-[1800px] mx-auto w-full px-4 lg:px-8 py-6 lg:py-8 lg:overflow-hidden overflow-visible">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-full h-auto">
           
-          {/* Column 1: Route Visualization (3 cols - 25%) */}
-          <div className="lg:col-span-3 bg-zinc-900/10 border-r border-zinc-800/50 pr-4 h-full flex flex-col">
+          {/* Column 1: Route Visualization */}
+          {/* Mobile: Order 2, Restricted Height, Border Styles */}
+          <div className="lg:col-span-3 order-2 lg:order-1 bg-zinc-900/10 lg:border-r border-zinc-800/50 pr-0 lg:pr-4 h-[400px] lg:h-full flex flex-col rounded-2xl lg:rounded-none border lg:border-0 border-zinc-800 p-4 lg:p-0">
             <div className="flex items-center gap-3 mb-2 px-2 text-emerald-500/80 shrink-0">
               <Network className="w-4 h-4" />
               <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
             
-            {/* REMOVED scrollbar-hide to allow scrolling */}
             <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 pt-2">
               {/* Connecting Line */}
               <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
@@ -285,8 +285,9 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Column 2: Input & Terminal (4 cols - 33% - "1/3 wide") */}
-          <div ref={col2Ref} className="lg:col-span-4 flex flex-col h-full overflow-y-auto pr-2 pb-10 scroll-smooth">
+          {/* Column 2: Input & Terminal */}
+          {/* Mobile: Order 1, Auto Height, Visible Overflow for window scrolling */}
+          <div ref={col2Ref} className="lg:col-span-4 order-1 lg:order-2 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-0 lg:pb-10 scroll-smooth">
             
             {/* STICKY INPUT */}
             <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0 sticky top-0 z-40 backdrop-blur-md">
@@ -313,7 +314,7 @@ const App: React.FC = () => {
               </form>
             </div>
 
-            {/* Protocol Analyzer - Reduced height to 320px to allow space for Render */}
+            {/* Protocol Analyzer */}
             <div className="bg-black border border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-[320px] shadow-lg shrink-0">
                   <div className="bg-zinc-900/80 px-5 py-3 border-b border-zinc-800 flex items-center justify-between backdrop-blur-sm">
                     <div className="flex items-center gap-2">
@@ -346,7 +347,7 @@ const App: React.FC = () => {
 
             {/* Final Render Preview */}
             {activeStepIndex === 8 && (
-               <div className="mt-8 mb-20 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
+               <div className="mt-8 mb-8 lg:mb-20 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
                   <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-1 overflow-hidden">
                     <div className="bg-black/50 backdrop-blur px-4 py-2 flex items-center gap-2 border-b border-zinc-800/50">
                       <div className="flex gap-1.5">
@@ -381,8 +382,9 @@ const App: React.FC = () => {
             
           </div>
 
-          {/* Column 3: Analysis (5 cols - 42%) */}
-          <div className="lg:col-span-5 flex flex-col h-full overflow-y-auto pr-2 pb-10 scroll-smooth space-y-6">
+          {/* Column 3: Analysis */}
+          {/* Mobile: Order 3, Auto Height */}
+          <div className="lg:col-span-5 order-3 lg:order-3 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-10 scroll-smooth space-y-6">
               
               {/* Certificate Card */}
               {certInfo && (
