@@ -234,7 +234,7 @@ const App: React.FC = () => {
               <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
             
-            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-20 space-y-10 pt-2">
+            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pb-32 space-y-10 pt-2">
               {/* Connecting Line */}
               <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
                 <div 
@@ -287,7 +287,7 @@ const App: React.FC = () => {
 
           {/* Column 2: Input & Terminal */}
           {/* Mobile: Order 1, Auto Height, Visible Overflow for window scrolling */}
-          <div ref={col2Ref} className="lg:col-span-4 order-1 lg:order-2 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-0 lg:pb-10 scroll-smooth">
+          <div ref={col2Ref} className="lg:col-span-4 order-1 lg:order-2 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-0 lg:pb-32 scroll-smooth">
             
             {/* STICKY INPUT */}
             <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0 sticky top-0 z-40 backdrop-blur-md">
@@ -384,7 +384,7 @@ const App: React.FC = () => {
 
           {/* Column 3: Analysis */}
           {/* Mobile: Order 3, Auto Height */}
-          <div className="lg:col-span-5 order-3 lg:order-3 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-10 scroll-smooth space-y-6">
+          <div className="lg:col-span-5 order-3 lg:order-3 flex flex-col lg:h-full h-auto lg:overflow-y-auto overflow-visible pr-0 lg:pr-2 pb-32 scroll-smooth space-y-6">
               
               {/* Certificate Card */}
               {certInfo && (
@@ -436,6 +436,12 @@ const App: React.FC = () => {
                     </div>
                   </div>
               )}
+
+              {/* Footer for Column 3 */}
+              <div className="border-t border-zinc-800 pt-6 mt-8 flex justify-between items-center text-[9px] text-zinc-600 font-mono uppercase tracking-widest opacity-50">
+                  <span>CONFIDENTIAL // AUTH_TOKEN_REQ</span>
+                  <span>ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+              </div>
           </div>
         </div>
       </main>
