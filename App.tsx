@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, Terminal, Activity, ArrowRight, BookOpen, Globe, Cpu, Layers, ShieldCheck, Zap, 
@@ -46,14 +45,26 @@ const App: React.FC = () => {
     }
   }, [packetLogs]);
 
-  // Auto-scroll Trace Steps
+  // Auto-scroll Trace Steps (Scoped to container)
   useEffect(() => {
-    // We scroll the trace container to keep the active step in view
-    if (activeStepIndex >= 0 && stepRefs.current[activeStepIndex]) {
-      stepRefs.current[activeStepIndex]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'nearest'
+    const container = traceListRef.current;
+    const activeElement = stepRefs.current[activeStepIndex];
+
+    if (container && activeElement && activeStepIndex >= 0) {
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeElement.getBoundingClientRect();
+      
+      // Calculate relative position within the scrolling container
+      // We want the element to be in the center of the container
+      const currentScrollTop = container.scrollTop;
+      const relativeTop = activeRect.top - containerRect.top; // Distance from viewport top of container to viewport top of element
+      
+      // Desired scroll position: Current Scroll + Relative Top - (Container Height / 2) + (Element Height / 2)
+      const targetScrollTop = currentScrollTop + relativeTop - (containerRect.height / 2) + (activeRect.height / 2);
+
+      container.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
       });
     }
   }, [activeStepIndex]);
@@ -229,7 +240,7 @@ const App: React.FC = () => {
                   ref={(el) => { stepRefs.current[idx] = el; }}
                   className="relative flex gap-6 items-center z-10"
                 >
-                   {/* Packet Animation - localized to the current active step context roughly */}
+                   {/* Packet Animation */}
                    {idx === activeStepIndex && isTracing && (
                      <div className="absolute left-[21px] top-1/2 -translate-y-1/2 w-4 h-4 z-50">
                         <div className="w-full h-full bg-orange-500 rounded-full shadow-[0_0_10px_#f97316] animate-ping opacity-75"></div>
@@ -265,10 +276,10 @@ const App: React.FC = () => {
           </div>
 
           {/* Center/Right Panel: Input, Terminal, Data */}
-          <div className="lg:col-span-9 flex flex-col h-full overflow-y-auto pr-2 pb-10">
+          <div className="lg:col-span-9 flex flex-col h-full overflow-y-auto pr-2 pb-10 scroll-smooth">
             
             {/* INPUT SECTION - CENTER COLUMN */}
-            <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0">
+            <div className="bg-black border border-zinc-800/80 rounded-[1.5rem] p-6 mb-8 shadow-2xl relative group shrink-0 sticky top-0 z-40 backdrop-blur-md">
                <div className="absolute -inset-[1px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity blur-xl pointer-events-none"></div>
                <form onSubmit={runTrace} className="relative flex gap-4">
                 <div className="relative flex-1">
