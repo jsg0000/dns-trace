@@ -1,6 +1,5 @@
-
 {
-  "name": "cyber-trace",
+  "name": "dns-trace",
   "main": "worker.ts",
   "assets": {
     "directory": "./dist"

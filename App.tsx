@@ -210,7 +210,7 @@ const App: React.FC = () => {
               <Shield className="text-emerald-500 w-4 h-4 lg:w-5 lg:h-5" />
             </div>
             <h1 className="text-lg lg:text-xl font-black text-white tracking-tight">
-              CYBER<span className="text-emerald-500 italic">TRACE</span>
+              DNS<span className="text-emerald-500 italic">TRACE</span>
               <span className="hidden lg:inline ml-3 text-[9px] bg-zinc-800 px-2 py-1 rounded text-zinc-500 font-mono tracking-widest uppercase">Sec_Audit_v3.0</span>
             </h1>
           </div>
@@ -235,53 +235,55 @@ const App: React.FC = () => {
             </div>
             
             <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pt-2 scrollbar-hide">
-              {/* Connecting Line */}
-              <div className="absolute left-[29px] top-4 bottom-0 w-[2px] bg-zinc-800/50">
-                <div 
-                  className="absolute top-0 w-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] transition-all duration-700 ease-out"
-                  style={{ height: `${(Math.max(0, activeStepIndex) / (steps.length - 1)) * 100}%` }}
-                />
-              </div>
-
-              {/* Steps */}
-              {steps.map((step, idx) => (
-                <div 
-                  key={step.id} 
-                  ref={(el) => { stepRefs.current[idx] = el; }}
-                  className="relative flex gap-6 items-center z-10 mb-10 last:mb-0"
-                >
-                   {/* Packet Animation */}
-                   {idx === activeStepIndex && isTracing && (
-                     <div className="absolute left-[21px] top-1/2 -translate-y-1/2 w-4 h-4 z-50">
-                        <div className="w-full h-full bg-orange-500 rounded-full shadow-[0_0_10px_#f97316] animate-ping opacity-75"></div>
-                     </div>
-                   )}
-
-                  <div className="w-16 flex justify-center flex-shrink-0">
-                    <ServerNode 
-                      type={step.serverType} 
-                      title={step.title} 
-                      status={step.status}
-                      isActive={activeStepIndex === idx}
+              <div className="relative">
+                  {/* Connecting Line */}
+                  <div className="absolute left-[29px] top-8 bottom-14 w-[2px] bg-zinc-800/50">
+                    <div 
+                      className="absolute top-0 w-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)] transition-all duration-700 ease-out"
+                      style={{ height: `${(Math.max(0, activeStepIndex) / (steps.length - 1)) * 100}%` }}
                     />
                   </div>
-                  <div className={`flex-1 transition-all duration-700 ${activeStepIndex >= idx ? 'opacity-100 translate-x-0' : 'opacity-30 translate-x-2'}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                       <h4 className="text-[11px] font-black text-zinc-100 uppercase tracking-tight">{step.description}</h4>
-                       {step.status === StepStatus.COMPLETED && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
-                    </div>
-                    {step.liveResult && (
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {step.liveResult.map((r, i) => (
-                          <span key={i} className="text-[9px] font-mono bg-zinc-900 text-emerald-400/90 px-1.5 py-0.5 rounded border border-zinc-800 uppercase shadow-sm">
-                            {r}
-                          </span>
-                        ))}
+
+                  {/* Steps */}
+                  {steps.map((step, idx) => (
+                    <div 
+                      key={step.id} 
+                      ref={(el) => { stepRefs.current[idx] = el; }}
+                      className="relative flex gap-6 items-center z-10 mb-10 last:mb-0"
+                    >
+                      {/* Packet Animation */}
+                      {idx === activeStepIndex && isTracing && (
+                        <div className="absolute left-[21px] top-1/2 -translate-y-1/2 w-4 h-4 z-50">
+                            <div className="w-full h-full bg-orange-500 rounded-full shadow-[0_0_10px_#f97316] animate-ping opacity-75"></div>
+                        </div>
+                      )}
+
+                      <div className="w-16 flex justify-center flex-shrink-0">
+                        <ServerNode 
+                          type={step.serverType} 
+                          title={step.title} 
+                          status={step.status}
+                          isActive={activeStepIndex === idx}
+                        />
                       </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      <div className={`flex-1 transition-all duration-700 ${activeStepIndex >= idx ? 'opacity-100 translate-x-0' : 'opacity-30 translate-x-2'}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-[11px] font-black text-zinc-100 uppercase tracking-tight">{step.description}</h4>
+                          {step.status === StepStatus.COMPLETED && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                        </div>
+                        {step.liveResult && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {step.liveResult.map((r, i) => (
+                              <span key={i} className="text-[9px] font-mono bg-zinc-900 text-emerald-400/90 px-1.5 py-0.5 rounded border border-zinc-800 uppercase shadow-sm">
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
               
               {/* Spacer for bottom scrolling */}
               <div className="h-24 w-full"></div>
