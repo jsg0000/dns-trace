@@ -52,17 +52,20 @@ const App: React.FC = () => {
     const activeElement = stepRefs.current[activeStepIndex];
 
     if (container && activeElement && activeStepIndex >= 0) {
-      const containerRect = container.getBoundingClientRect();
-      const activeRect = activeElement.getBoundingClientRect();
-      
-      const currentScrollTop = container.scrollTop;
-      const relativeTop = activeRect.top - containerRect.top;
-      const targetScrollTop = currentScrollTop + relativeTop - (containerRect.height / 2) + (activeRect.height / 2);
+      // Use setTimeout to allow for layout shifts/animations to start
+      setTimeout(() => {
+          const containerRect = container.getBoundingClientRect();
+          const activeRect = activeElement.getBoundingClientRect();
+          
+          const currentScrollTop = container.scrollTop;
+          const relativeTop = activeRect.top - containerRect.top;
+          const targetScrollTop = currentScrollTop + relativeTop - (containerRect.height / 2) + (activeRect.height / 2);
 
-      container.scrollTo({
-        top: targetScrollTop,
-        behavior: 'smooth'
-      });
+          container.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+      }, 100);
     }
   }, [activeStepIndex]);
 
@@ -234,7 +237,7 @@ const App: React.FC = () => {
               <h2 className="text-xs font-black uppercase tracking-widest">Route Topology</h2>
             </div>
             
-            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pt-2 scrollbar-hide">
+            <div ref={traceListRef} className="relative flex-1 overflow-y-auto pr-2 pt-2">
               <div className="relative">
                   {/* Connecting Line */}
                   <div className="absolute left-[29px] top-8 bottom-14 w-[2px] bg-zinc-800/50">
