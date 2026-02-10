@@ -1,4 +1,3 @@
-
 export interface DNSRecord {
   name: string;
   type: number;
@@ -17,6 +16,17 @@ export interface DNSResponse {
   Answer?: DNSRecord[];
   Authority?: DNSRecord[];
   Additional?: DNSRecord[];
+  latency?: number; 
+}
+
+export interface IPIntelligence {
+  ip: string;
+  org: string;
+  asn: string;
+  country: string;
+  city: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface CertificateInfo {
@@ -53,6 +63,7 @@ export interface TraceStep {
   status: StepStatus;
   serverType: ServerType;
   liveResult?: string[]; 
+  latency?: number;
 }
 
 export const RECORD_TYPES: Record<number, string> = {

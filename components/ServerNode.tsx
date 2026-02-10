@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LucideIcon, Globe, Server, Monitor, HardDrive, ShieldCheck, Link, Lock, FileCode } from 'lucide-react';
 import { StepStatus, ServerType } from '../types';
@@ -9,6 +8,7 @@ interface ServerNodeProps {
   status: StepStatus;
   details?: string;
   isActive: boolean;
+  latency?: number;
 }
 
 const iconMap: Record<ServerType, LucideIcon> = {
@@ -22,7 +22,7 @@ const iconMap: Record<ServerType, LucideIcon> = {
   http: FileCode,
 };
 
-const ServerNode: React.FC<ServerNodeProps> = ({ type, title, status, details, isActive }) => {
+const ServerNode: React.FC<ServerNodeProps> = ({ type, title, status, details, isActive, latency }) => {
   const Icon = iconMap[type] || Server;
   
   const getBorderColor = () => {
@@ -45,6 +45,12 @@ const ServerNode: React.FC<ServerNodeProps> = ({ type, title, status, details, i
 
   return (
     <div className={`relative flex flex-col items-center w-full max-w-sm transition-all duration-500 transform ${isActive ? 'scale-110 z-20' : 'scale-100'}`}>
+      {latency !== undefined && status === StepStatus.COMPLETED && (
+        <div className="absolute -top-1 -right-1 bg-emerald-500 text-black text-[7px] font-black px-1.5 py-0.5 rounded-full shadow-lg z-30 animate-in zoom-in">
+          {latency}ms
+        </div>
+      )}
+
       <div className={`z-10 flex items-center justify-center w-16 h-16 rounded-2xl border-2 bg-zinc-900 mb-3 ${getBorderColor()} transition-colors duration-500`}>
         <Icon className={`w-8 h-8 ${getIconColor()} ${status === StepStatus.ACTIVE ? 'animate-pulse' : ''}`} />
       </div>
