@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Search, Terminal, Activity, Globe, Cpu, Layers, ShieldCheck, Zap, 
-  Network, Shield, CheckCircle2, AlertTriangle, Lock, Map as MapIcon,
-  ChevronRight, Info, BookOpen, Rocket
+  Search, Terminal, Activity, Globe, Cpu, ShieldCheck, Zap, 
+  Network, Shield, CheckCircle2, AlertTriangle, Map as MapIcon,
+  BookOpen, Rocket, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { fetchDNS, getTLD, cleanDomain, getIPIntelligence } from './services/dnsService';
 import { getTechnicalInsight } from './services/geminiService';
@@ -36,6 +36,7 @@ const App: React.FC = () => {
   const [headers, setHeaders] = useState<SecurityHeader[]>([]);
   const [ipIntel, setIpIntel] = useState<IPIntelligence | null>(null);
   const [traceSpeed, setTraceSpeed] = useState<TraceSpeed>('educational');
+  const [isAuditExpanded, setIsAuditExpanded] = useState(true);
   
   const logRef = useRef<HTMLDivElement>(null);
   const traceListRef = useRef<HTMLDivElement>(null);
@@ -64,6 +65,11 @@ const App: React.FC = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [activeStepIndex]);
+
+  // Auto-expand audit when it arrives
+  useEffect(() => {
+    if (aiInsight) setIsAuditExpanded(true);
+  }, [aiInsight]);
 
   const addLog = (msg: string, type: 'info' | 'pkt' | 'success' | 'err' = 'info') => {
     setPacketLogs(prev => [...prev, { msg, type }]);
@@ -295,7 +301,7 @@ const App: React.FC = () => {
 
           <div className="lg:col-span-4 flex flex-col lg:h-full h-auto space-y-8 lg:overflow-y-auto pr-2 scroll-smooth">
               {ipIntel && (
-                <div className="bg-zinc-900 border border-blue-500/20 rounded-3xl p-6 animate-in slide-in-from-right-10 duration-700">
+                <div className="bg-zinc-900 border border-blue-500/20 rounded-3xl p-6 animate-in slide-in-from-right-10 duration-700 shrink-0">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="bg-blue-500/10 p-2 rounded-lg text-blue-500">
                             <Globe className="w-4 h-4" />
@@ -325,19 +331,27 @@ const App: React.FC = () => {
 
               {certInfo && <CertificateCard cert={certInfo} isVisible={true} />}
               
-              <div className={`bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-8 relative overflow-hidden transition-all duration-1000 ${aiInsight ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+              <div className={`bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-8 relative overflow-hidden transition-all duration-1000 shrink-0 ${aiInsight ? 'opacity-100' : 'opacity-40 grayscale'}`}>
                   {aiInsight ? (
                      <>
-                      <div className="flex items-center gap-4 mb-5">
-                        <div className="bg-purple-500/10 p-2.5 rounded-xl text-purple-400 border border-purple-500/20">
-                          <Cpu className="w-5 h-5" />
+                      <div 
+                        className="flex items-center justify-between mb-5 cursor-pointer"
+                        onClick={() => setIsAuditExpanded(!isAuditExpanded)}
+                      >
+                         <div className="flex items-center gap-4">
+                          <div className="bg-purple-500/10 p-2.5 rounded-xl text-purple-400 border border-purple-500/20">
+                            <Cpu className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-tight">Technical Audit</h3>
+                            <p className="text-[9px] text-purple-500 font-bold uppercase tracking-widest">Workers AI • Llama 3.1</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-sm font-black text-white uppercase tracking-tight">Technical Audit</h3>
-                          <p className="text-[9px] text-purple-500 font-bold uppercase tracking-widest">Workers AI • Llama 3.1</p>
-                        </div>
+                        <button className="text-zinc-500 hover:text-white transition-colors">
+                          {isAuditExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
                       </div>
-                      <div className="text-[11px] leading-relaxed text-zinc-300 font-medium whitespace-pre-wrap font-mono">
+                      <div className={`text-[11px] leading-relaxed text-zinc-300 font-medium whitespace-pre-wrap font-mono transition-all duration-500 overflow-hidden ${isAuditExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
                         {aiInsight}
                       </div>
                      </>
@@ -350,7 +364,7 @@ const App: React.FC = () => {
               </div>
 
               {headers.length > 0 && (
-                  <div className="bg-zinc-900/20 border border-zinc-800/80 rounded-3xl p-6 animate-in slide-in-from-bottom-5">
+                  <div className="bg-zinc-900/20 border border-zinc-800/80 rounded-3xl p-6 animate-in slide-in-from-bottom-5 shrink-0">
                     <div className="flex items-center gap-3 mb-4">
                       <ShieldCheck className="w-4 h-4 text-orange-500" />
                       <h3 className="text-xs font-black text-white uppercase tracking-wider">Header Hardening</h3>
