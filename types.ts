@@ -16,7 +16,7 @@ export interface DNSResponse {
   Answer?: DNSRecord[];
   Authority?: DNSRecord[];
   Additional?: DNSRecord[];
-  latency?: number; 
+  latency?: number;
 }
 
 export interface IPIntelligence {
@@ -59,19 +59,17 @@ export interface TraceStep {
   id: string;
   title: string;
   description: string;
-  technicalDetails: string;
   status: StepStatus;
   serverType: ServerType;
-  liveResult?: string[]; 
+  liveResult?: string[];
   latency?: number;
 }
 
-export const RECORD_TYPES: Record<number, string> = {
-  1: 'A',
-  2: 'NS',
-  5: 'CNAME',
-  6: 'SOA',
-  15: 'MX',
-  16: 'TXT',
-  28: 'AAAA'
-};
+// Represents a geolocation point in the live route trace on the map
+export interface RoutePoint {
+  stepIndex: number;
+  label: string;
+  lat: number;
+  lng: number;
+  status: StepStatus;
+}
