@@ -13,8 +13,8 @@
   },
   "kv_namespaces": [
     {
-      "binding": "KV",
-      "id": "871d191a98aa4729a55156ec6ba40f80"
+      "binding": "RATE_LIMITER",
+      "id": "03d898b6f349465c8e19b06798df27c7"
     }
   ]
 }
