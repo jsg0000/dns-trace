@@ -1,4 +1,3 @@
-
 {
   "name": "dns-trace",
   "main": "worker.ts",
@@ -11,5 +10,11 @@
   },
   "ai": {
     "binding": "AI"
-  }
+  },
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "871d191a98aa4729a55156ec6ba40f80"
+    }
+  ]
 }

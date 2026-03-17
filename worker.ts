@@ -1,5 +1,6 @@
 export interface Env {
   AI: any;
+  RATE_LIMITER: KVNamespace;
 }
 
 export interface ExecutionContext {
@@ -7,8 +8,20 @@ export interface ExecutionContext {
   passThroughOnException(): void;
 }
 
-/** Strict domain validator — rejects anything that isn't a valid hostname */
+/** Only accept valid hostnames — rejects prompt injection attempts */
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+
+/**
+ * Replace with your actual deployed frontend origin.
+ * Using '*' lets anyone call your Worker from their own site and drain your AI quota.
+ * Your domain from the screenshots: https://dns-trace.cfjsg.workers.dev
+ */
+const ALLOWED_ORIGIN = 'https://dns-trace.cfjsg.workers.dev';
+
+/** Requests allowed per IP per window */
+const RATE_LIMIT = 5;
+/** Window duration in seconds */
+const RATE_WINDOW_SECONDS = 3600; // 1 hour
 
 function sanitizeDomain(raw: string): string | null {
   const trimmed = raw.trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
@@ -22,9 +35,10 @@ export default {
     const url = new URL(request.url);
 
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Vary': 'Origin',
     };
 
     if (request.method === 'OPTIONS') {
@@ -33,6 +47,26 @@ export default {
 
     if (url.pathname === '/api/audit' && request.method === 'POST') {
       try {
+        // ── Rate limiting ────────────────────────────────────────────────────
+        const clientIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+        const rlKey = `rl:${clientIp}`;
+
+        const currentStr = await env.RATE_LIMITER.get(rlKey);
+        const current = currentStr ? parseInt(currentStr, 10) : 0;
+
+        if (current >= RATE_LIMIT) {
+          return new Response(
+            JSON.stringify({ error: `Rate limit exceeded. Max ${RATE_LIMIT} audits per hour per IP.` }),
+            { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+          );
+        }
+
+        // Increment count; TTL resets only on first write — use put with expirationTtl
+        await env.RATE_LIMITER.put(rlKey, String(current + 1), {
+          expirationTtl: RATE_WINDOW_SECONDS,
+        });
+        // ────────────────────────────────────────────────────────────────────
+
         const body = await request.json() as { domain?: unknown };
 
         if (typeof body.domain !== 'string') {
@@ -57,7 +91,7 @@ export default {
           });
         }
 
-        // Domain is now validated as a safe hostname — safe to interpolate
+        // Domain is validated as a safe hostname — safe to interpolate
         const prompt = `Perform a master's-level security and infrastructure audit for the domain: ${domain}
 
 Focus on:

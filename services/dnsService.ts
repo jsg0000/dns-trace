@@ -39,13 +39,33 @@ export const fetchDNS = async (domain: string, type: string = 'A'): Promise<DNSR
 };
 
 /**
+ * ASNs that announce the same IP globally via anycast BGP.
+ * Geolocation databases map these to registry addresses (often North America),
+ * not the PoP that actually handles your TCP connection.
+ */
+const ANYCAST_ASNS = new Set([
+  'AS13335',  // Cloudflare
+  'AS209242', // Cloudflare R2 / Workers
+  'AS54113',  // Fastly
+  'AS20940',  // Akamai
+  'AS16509',  // AWS CloudFront
+  'AS15169',  // Google / GCP
+  'AS8075',   // Microsoft Azure CDN
+  'AS22822',  // Limelight
+  'AS60068',  // CDN77
+  'AS30148',  // Sucuri
+  'AS19551',  // Incapsula / Imperva
+]);
+
+function isAnycastASN(asn: string): boolean {
+  const match = asn.match(/AS\d+/i);
+  return match ? ANYCAST_ASNS.has(match[0].toUpperCase()) : false;
+}
+
+/**
  * Look up BGP/geo metadata for an IP.
- * Primary:   ipapi.co  (detailed, rate-limited at ~1k/day free)
- * Fallback:  ip-api.com (2k/min free, no HTTPS on free tier but adequate)
- *
- * The "always Canada" bug was caused by ipapi.co occasionally resolving
- * Cloudflare anycast IPs to their Toronto PoP. The fallback gives a second
- * opinion; if both agree, it's accurate.
+ * Primary:   ipapi.co  (~1k/day free tier)
+ * Fallback:  ip-api.com (~2k/min free tier)
  */
 export const getIPIntelligence = async (ip: string): Promise<IPIntelligence | null> => {
   // Primary: ipapi.co
@@ -54,14 +74,16 @@ export const getIPIntelligence = async (ip: string): Promise<IPIntelligence | nu
     if (res.ok) {
       const d = await res.json();
       if (d.latitude && d.longitude && !d.error) {
+        const asn = d.asn ?? 'AS0';
         return {
           ip: d.ip,
           org: d.org ?? d.isp ?? 'Unknown',
-          asn: d.asn ?? 'AS0',
+          asn,
           country: d.country_name ?? 'Unknown',
           city: d.city ?? 'Unknown',
           latitude: d.latitude,
           longitude: d.longitude,
+          isAnycast: isAnycastASN(asn),
         };
       }
     }
@@ -69,7 +91,7 @@ export const getIPIntelligence = async (ip: string): Promise<IPIntelligence | nu
     // fall through to backup
   }
 
-  // Fallback: ip-api.com (HTTP only on free tier — acceptable for non-sensitive geo data)
+  // Fallback: ip-api.com
   try {
     const res = await fetch(
       `https://ip-api.com/json/${ip}?fields=status,message,country,city,lat,lon,org,as`
@@ -77,14 +99,16 @@ export const getIPIntelligence = async (ip: string): Promise<IPIntelligence | nu
     if (res.ok) {
       const d = await res.json();
       if (d.status === 'success' && d.lat && d.lon) {
+        const asn = d.as ?? 'AS0';
         return {
           ip,
           org: d.org ?? 'Unknown',
-          asn: d.as ?? 'AS0',
+          asn,
           country: d.country ?? 'Unknown',
           city: d.city ?? 'Unknown',
           latitude: d.lat,
           longitude: d.lon,
+          isAnycast: isAnycastASN(asn),
         };
       }
     }

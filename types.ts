@@ -27,6 +27,13 @@ export interface IPIntelligence {
   city: string;
   latitude: number;
   longitude: number;
+  /**
+   * True when the IP belongs to a known anycast CDN/network.
+   * Geolocation for anycast IPs reflects the registry address, not the
+   * actual PoP your TCP connection reaches — callers should use the
+   * user's location as the terminal map node instead.
+   */
+  isAnycast: boolean;
 }
 
 export interface CertificateInfo {
